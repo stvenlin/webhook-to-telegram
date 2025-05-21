@@ -1,0 +1,33 @@
+from flask import Flask, request
+import requests
+import os
+
+app = Flask(__name__)
+
+@app.route('/', methods=['POST'])
+def webhook():
+    data = request.json
+
+    token = data.get('token')
+    chat_id = data.get('chat_id')
+    message = data.get('message')
+
+    if not all([token, chat_id, message]):
+        return {'status': 'error', 'message': 'Missing fields'}, 400
+
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = {"chat_id": chat_id, "text": message, "parse_mode": "HTML"}
+    r = requests.post(url, json=payload)
+
+    if r.status_code != 200:
+        return {'status': 'error', 'message': 'Telegram API failed'}, 500
+
+    return {'status': 'success'}, 200
+
+@app.route('/', methods=['GET'])
+def index():
+    return {'status': 'ok'}, 200
+
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
